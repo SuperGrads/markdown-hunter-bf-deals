@@ -7,7 +7,7 @@
 // Both runs must write identical bytes, so nothing here reads the clock, the environment (beyond the output path)
 // or the network, and files are copied in a sorted, fixed order.
 
-import { copyFileSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-frontend.ts';
@@ -47,6 +47,18 @@ function resetOutput(dir: string): void {
   for (const name of ['app', 'screenshots', 'dossier.json']) rmSync(join(dir, name), { recursive: true, force: true });
 }
 
+/** Refuse a hand-in the gate would refuse anyway, with a message that says why: no page, or not 3–4 screenshots. */
+function assertHandInShape(root: string): void {
+  if (!existsSync(join(root, 'app', 'index.html'))) throw new Error('app/index.html is missing');
+  const shots = readdirSync(join(root, 'screenshots')).filter((n) => !n.startsWith('.') && /\.(jpe?g|png)$/i.test(n));
+  if (shots.length < 3 || shots.length > LIMITS.screenshots.max) throw new Error(`screenshots/ holds ${shots.length} images; 3 to 4 are required`);
+  for (const name of shots) {
+    const bytes = statSync(join(root, 'screenshots', name)).size;
+    if (bytes > LIMITS.screenshots.max_bytes) throw new Error(`screenshots/${name} is ${bytes} bytes, over 256 KiB`);
+  }
+}
+
+assertHandInShape(repoRoot);
 resetOutput(outDir);
 const appFiles = copyTree(join(repoRoot, 'app'), join(outDir, 'app'));
 const shotFiles = copyTree(join(repoRoot, 'screenshots'), join(outDir, 'screenshots'));
