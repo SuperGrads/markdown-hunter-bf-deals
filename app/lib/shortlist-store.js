@@ -1,5 +1,5 @@
-// The shopper's saved deals, kept in this browser only. Storage can be missing (private mode), so every access is
-// guarded and the list simply starts empty.
+// The shopper's saved deals, kept in this browser only. Storage can be missing (private mode, blocked site data), so
+// every access is guarded and the list simply starts empty.
 
 const KEY = 'markdown-hunter:shortlist';
 
