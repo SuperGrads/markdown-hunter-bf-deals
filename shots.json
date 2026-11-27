@@ -1,0 +1,6 @@
+[
+  { "file": "1-deals.jpg", "path": "#/", "viewport": { "width": 1280, "height": 800 }, "saved": ["sony-wh1000xm6-amazon", "macbook-air-13-m5-amazon", "echo-show-8-amazon"] },
+  { "file": "2-price-check.jpg", "path": "#/?cat=Audio&sig=low&deal=airpods-pro-3-amazon", "viewport": { "width": 1280, "height": 800 }, "saved": ["sony-wh1000xm6-amazon", "macbook-air-13-m5-amazon", "echo-show-8-amazon"] },
+  { "file": "3-compare-stores.jpg", "path": "#/compare", "viewport": { "width": 1280, "height": 800 }, "saved": ["sony-wh1000xm6-amazon", "macbook-air-13-m5-amazon", "echo-show-8-amazon"] },
+  { "file": "4-phone.jpg", "path": "#/", "type": "airpods", "viewport": { "width": 390, "height": 844 }, "scale": 1.5, "saved": ["sony-wh1000xm6-amazon"] }
+]

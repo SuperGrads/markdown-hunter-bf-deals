@@ -1,0 +1,78 @@
+/* Tokens, page layout and the top band. Components live in components.css. */
+:root {
+  --paper: #f4f1ea;
+  --card: #ffffff;
+  --ink: #14161b;
+  --ink-2: #4a4f5a;
+  --ink-3: #7b808a;
+  --line: #e2ddd2;
+  --night: #121318;
+  --night-2: #1d1f27;
+  --gold: #ffd23f;
+  --red: #e5372b;
+  --low: #0b8457;
+  --low-bg: #e3f5ec;
+  --strong: #1f5fd1;
+  --strong-bg: #e6eefc;
+  --fair: #9a6400;
+  --fair-bg: #fdf1d8;
+  --routine: #6c6f78;
+  --routine-bg: #ececee;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgb(20 22 27 / 6%), 0 4px 14px rgb(20 22 27 / 6%);
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.45 var(--font); }
+body.locked { overflow: hidden; }
+a { color: inherit; }
+button, input, select { font: inherit; color: inherit; }
+.ic { width: 1em; height: 1em; flex: none; vertical-align: -0.14em; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+[hidden] { display: none !important; }
+
+/* Top band */
+.top { background: var(--night); color: #f5f5f7; padding: 14px 0 0; }
+.masthead, .stats { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+.masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand b { display: block; font-size: 21px; letter-spacing: -0.02em; }
+.brand small { display: block; color: #a9acb6; font-size: 12.5px; }
+.logo { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; background: var(--gold); color: var(--night); font-size: 22px; transform: rotate(-8deg); }
+.tabs { display: flex; gap: 6px; }
+.tab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 1px solid #343744; background: transparent; color: #d6d8de; text-decoration: none; font-weight: 600; font-size: 14px; cursor: pointer; }
+.tab:hover { border-color: #5a5e6c; color: #fff; }
+.tab.on { background: #fff; color: var(--night); border-color: #fff; }
+.tab .pill { background: var(--gold); color: var(--night); border-radius: 999px; padding: 0 7px; font-size: 12px; }
+.stats { display: grid; grid-template-columns: repeat(4, auto) 1fr; gap: 0; margin-top: 14px; border-top: 1px solid #2a2d38; }
+.stats > div { padding: 8px 26px 10px 0; margin-right: 26px; border-right: 1px solid #2a2d38; }
+.stats > div:last-child { border-right: 0; margin-right: 0; text-align: right; padding-right: 0; }
+.stats dt { color: #a9acb6; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; display: flex; gap: 6px; align-items: center; }
+.stats .when dt { justify-content: flex-end; }
+.stats dd { margin: 1px 0 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+.stats .when dd { font-size: 17px; font-weight: 700; padding-top: 6px; color: var(--gold); }
+.stats .ic { color: var(--gold); }
+
+.controls { padding-top: 16px; }
+.foot { color: var(--ink-3); font-size: 13px; padding-top: 28px; padding-bottom: 40px; }
+
+@media (max-width: 760px) {
+  .wrap, .masthead, .stats { padding-left: 16px; padding-right: 16px; }
+  .masthead { flex-wrap: wrap; }
+  .brand small { display: none; }
+  .logo { width: 34px; height: 34px; font-size: 19px; }
+  .top { padding-top: 10px; }
+  .tabs { width: 100%; overflow-x: auto; padding-bottom: 2px; margin-top: -2px; }
+  .tab { padding: 7px 12px; font-size: 13px; white-space: nowrap; }
+  .stats { grid-template-columns: repeat(4, 1fr); margin-top: 12px; }
+  .stats > div { padding: 8px 6px 10px 0; margin-right: 8px; }
+  .stats dt { font-size: 9.5px; letter-spacing: 0.02em; line-height: 1.2; min-height: 2.4em; }
+  .stats dt .ic { display: none; }
+  .stats dd { font-size: 20px; }
+  .stats .when { grid-column: 1 / -1; text-align: left; border-top: 1px solid #2a2d38; display: flex; align-items: center; gap: 10px; padding: 8px 0 10px; }
+  .stats .when dt { justify-content: flex-start; }
+  .stats .when dd { padding: 0; font-size: 14px; }
+}
