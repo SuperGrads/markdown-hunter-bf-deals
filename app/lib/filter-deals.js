@@ -1,4 +1,4 @@
-// Search, facet filters and sort orders over the deal list, and the live count each filter option shows.
+// Search, facet filters, sort orders, and the live count each filter option shows.
 
 import { dealScore, percentOff, savings } from './deal-math.js';
 
@@ -25,10 +25,9 @@ export function filterDeals(deals, s) {
     .filter((d) => !s.store || d.store === s.store)
     .filter((d) => percentOff(d) >= s.min)
     .filter((d) => !s.sig || d.signal === s.sig)
-    .sort((a, b) => (SORTS[s.sort] ?? SORTS.score)(a, b) || a.price - b.price);
+    .sort((a, b) => (SORTS[s.sort] ?? SORTS.score)(a, b) || savings(b) - savings(a) || a.price - b.price);
 }
 
-/** How many deals each option of one facet would leave, with every other active filter applied. */
 export function facetCounts(deals, s, key, values) {
   return Object.fromEntries(values.map((v) => [v, filterDeals(deals, { ...s, [key]: v }).length]));
 }

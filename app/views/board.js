@@ -1,56 +1,72 @@
-// The page around the deal grid: the top band (brand, the board's vital numbers, navigation), the search and filter
-// bar with a live count on every option, and the line that says how many deals the filters leave.
+// The board around the deals: top band with facts and verdict legend, filter bar, Today's best, the Skip rail.
 
-import { SIGNALS, percentOff } from '../lib/deal-math.js';
+import { SIGNALS, todaysBest } from '../lib/deal-math.js';
 import { MINIMUMS, SORT_LABELS, facetCounts, unique } from '../lib/filter-deals.js';
-import { checkedAt, esc } from '../lib/format.js';
-import { icons, verdictBadge } from './deal-card.js';
+import { clockOf, dayOf, esc, usd } from '../lib/format.js';
+import { dealCard, icons, verdictBadge } from './deal-card.js';
 
-export function boardStats(deals) {
+export function boardFacts(deals) {
   const times = deals.map((d) => d.checked).sort();
   return {
     count: deals.length,
     stores: new Set(deals.map((d) => d.store)).size,
-    lows: deals.filter((d) => d.signal === 'low').length,
-    skips: deals.filter((d) => d.signal === 'routine').length,
-    avg: Math.round(deals.reduce((sum, d) => sum + percentOff(d), 0) / deals.length),
-    from: checkedAt(times[0]),
-    to: checkedAt(times[times.length - 1]).split(', ')[1],
+    onPage: deals.filter((d) => d.readAt === 'store page').length,
+    day: dayOf(times[0]),
+    window: `${clockOf(times[0])}–${clockOf(times.at(-1))} UTC`,
   };
 }
 
 export function boardHeader(deals, state, savedCount) {
-  const s = boardStats(deals);
+  const f = boardFacts(deals);
   const tab = (view, label, href) => `<a href="${href}" class="tab ${state.view === view ? 'on' : ''}">${label}</a>`;
-  const stat = (label, value, cls = '') => `<div class="${cls}"><dt>${label}</dt><dd>${value}</dd></div>`;
+  const counts = facetCounts(deals, { ...state, q: '', cat: '', store: '', min: 0 }, 'sig', Object.keys(SIGNALS));
+  const legend = Object.keys(SIGNALS).map((k) =>
+    `<button class="key sig-${k} ${state.sig === k ? 'on' : ''}" data-set="sig" data-value="${k}" aria-pressed="${state.sig === k}"><i></i>${SIGNALS[k].label}<b>${counts[k]}</b></button>`).join('');
   return `<div class="masthead">
-  <a class="brand" href="#/"><span class="logo">${icons.tag}</span><span><b>Markdown Hunter</b><small>Black Friday 2026 · every price checked, every verdict explained</small></span></a>
+  <a class="brand" href="#/"><span class="logo">${icons.tag}</span><span><b>Markdown Hunter</b><small>Black Friday deals, re-checked today, each with a verdict and its evidence</small></span></a>
   <nav class="tabs">${tab('deals', 'Deals', '#/')}${tab('compare', `${icons.scale}Compare stores`, '#/compare')}<button class="tab" data-list="toggle">${icons.star}Shortlist<span class="pill">${savedCount}</span></button></nav>
 </div>
-<dl class="stats">
-  ${stat('Verified deals', s.count)}${stat('Stores', s.stores)}${stat('All-time lows', s.lows, 'gold')}${stat('Avg. off', s.avg + '%')}${stat('Flagged “skip”', s.skips, 'red')}
-  ${stat(`${icons.clock}Prices checked`, `${esc(s.from.replace(/,.*/, ''))}, ${esc(s.from.split(', ')[1].replace(' UTC', ''))}–${esc(s.to)}`, 'when')}
-</dl>`;
+<div class="facts-row">
+  <p class="facts-line"><b>${f.count}</b> deals · <b>${f.stores}</b> stores · re-checked <b class="gold">${f.day} ${f.window}</b></p>
+  <div class="legend" role="group" aria-label="Verdict">${legend}</div>
+</div>`;
 }
 
 export function filterBar(deals, s) {
   const cats = unique(deals, 'category');
   const stores = unique(deals, 'store').sort();
   const catCount = facetCounts(deals, s, 'cat', ['', ...cats]);
-  const sigCount = facetCounts(deals, s, 'sig', ['', ...Object.keys(SIGNALS)]);
   const storeCount = facetCounts(deals, s, 'store', ['', ...stores]);
-  const chip = (key, value, label, n, extra = '') =>
-    `<button class="chip ${extra} ${s[key] === value ? 'on' : ''}" data-set="${key}" data-value="${esc(value)}" ${n === 0 ? 'disabled' : ''}>${label}<span>${n}</span></button>`;
+  const chip = (value, label, n) =>
+    `<button class="chip ${s.cat === value ? 'on' : ''}" data-set="cat" data-value="${esc(value)}" ${n === 0 ? 'disabled' : ''}>${label}<span>${n}</span></button>`;
   const option = (v, label, on) => `<option value="${esc(v)}" ${on ? 'selected' : ''}>${label}</option>`;
 
   return `<div class="bar-row">
   <label class="search">${icons.search}<input type="search" id="q" value="${esc(s.q)}" placeholder="Search 'OLED', 'Dyson'…" aria-label="Search deals" autocomplete="off"></label>
-  <label class="select"><span>Store</span><select data-field="store">${['', ...stores].map((v) => option(v, `${esc(v || 'All stores')} (${storeCount[v]})`, s.store === v)).join('')}</select></label>
+  <label class="select ${s.store ? 'set' : ''}"><span>Store</span><select data-field="store">${['', ...stores].map((v) => option(v, `${esc(v || 'All stores')} (${storeCount[v]})`, s.store === v)).join('')}</select></label>
   <label class="select"><span>Sort</span><select data-field="sort">${Object.entries(SORT_LABELS).map(([v, l]) => option(v, l, s.sort === v)).join('')}</select></label>
   <div class="seg" role="group" aria-label="Minimum discount"><span>Min. off</span>${MINIMUMS.map((m) => `<button data-set="min" data-value="${m}" class="${s.min === m ? 'on' : ''}">${m ? m + '%+' : 'Any'}</button>`).join('')}</div>
 </div>
-<div class="chips" role="group" aria-label="Category"><span class="lbl">Category</span>${chip('cat', '', 'All', catCount[''])}${cats.map((c) => chip('cat', c, esc(c), catCount[c])).join('')}</div>
-<div class="chips" role="group" aria-label="Verdict"><span class="lbl">Verdict</span>${chip('sig', '', 'Any', sigCount[''])}${Object.keys(SIGNALS).map((k) => chip('sig', k, verdictBadge(k), sigCount[k], 'v')).join('')}</div>`;
+<div class="chips" role="group" aria-label="Category"><span class="lbl">Category</span>${chip('', 'All', catCount[''])}${cats.map((c) => chip(c, esc(c), catCount[c])).join('')}</div>`;
+}
+
+export const isHome = (s) => !s.q && !s.cat && !s.store && !s.min && !s.sig && s.sort === 'score';
+
+export function bestStrip(deals, saved) {
+  const picks = todaysBest(deals);
+  return `<section class="strip" aria-label="Today's best">
+  <h2>${icons.trophy}Today's best <small>top TV, audio and home deal, each at its cheapest store</small><span class="count">${deals.filter((d) => d.readAt === 'store page').length} read on the store page, the rest in a source dated today</span></h2>
+  <div class="strip-cards">${picks.map((d) => dealCard(d, deals, saved, 'pick')).join('')}</div>
+</section>`;
+}
+
+export function skipRail(deals) {
+  const skips = deals.filter((d) => d.signal === 'routine');
+  const item = (d) => `<li><a href="#/?deal=${encodeURIComponent(d.id)}" data-open="${esc(d.id)}">${verdictBadge('routine')}<b>${esc(d.product)}</b><span class="rail-price">${esc(d.store)} · <strong>${usd(d.price)}</strong></span><small>${esc(d.evidence)}</small></a></li>`;
+  return `<aside class="rail" aria-label="Deals flagged Skip">
+  <h2>${icons.alert}Flagged: skip these <span>${skips.length}</span></h2>
+  <ul>${skips.map(item).join('')}</ul>
+</aside>`;
 }
 
 export function resultLine(shown, total, s) {

@@ -1,15 +1,9 @@
-// Markdown Hunter: boots the finder, keeps every view in the URL hash and re-renders on each change.
-//
-//   #/                  the deal grid (filters as ?q=&cat=&store=&min=&sig=&sort=)
-//   #/?deal=<id>        the same, with that deal's price check open
-//   #/compare           the same product side by side across stores
-//   …&list=1            the shortlist drawer open
-//
-// The deal data and every secondary view arrive by import(), so the first load is the page frame alone.
-// window.__shotReady turns true once a render is on screen, for the screenshot script.
+// Markdown Hunter: boots the finder, keeps every view in the URL hash (#/?q=&cat=&store=&min=&sig=&sort=&deal=,
+// #/compare, &list=1) and re-renders on each change. Deal data and secondary views arrive by import().
 
+import { todaysBest } from './lib/deal-math.js';
 import { filterDeals } from './lib/filter-deals.js';
-import { boardHeader, filterBar, resultLine } from './views/board.js';
+import { bestStrip, boardHeader, filterBar, isHome, resultLine, skipRail } from './views/board.js';
 import { dealCard } from './views/deal-card.js';
 
 const DEFAULTS = { view: 'deals', q: '', cat: '', store: '', min: 0, sig: '', sort: 'score', deal: '', list: '' };
@@ -32,6 +26,7 @@ export function writeHash(s) {
 
 const $ = (id) => document.getElementById(id);
 const [top, controls, main, layer] = ['top', 'controls', 'main', 'layer'].map($);
+const wide = matchMedia('(min-width: 900px)');
 
 const later = {
   data: () => import('./data/deals.js'),
@@ -50,14 +45,21 @@ const go = (patch) => {
   location.hash = writeHash({ ...state, ...patch });
 };
 
-function renderGrid() {
+function renderBoard(open, detail) {
   const shown = filterDeals(deals, state);
-  main.innerHTML = resultLine(shown.length, deals.length, state) + (shown.length
-    ? `<div class="grid">${shown.map((d) => dealCard(d, deals, saved)).join('')}</div>`
-    : '<div class="none"><h3>No deal matches</h3><p>Try a lower minimum discount, another store or a shorter search.</p><a href="#/" data-clear>Show every deal</a></div>');
+  const home = isHome(state) && !open;
+  const picks = home ? new Set(todaysBest(deals).map((d) => d.id)) : new Set();
+  const list = shown.filter((d) => !picks.has(d.id));
+  const docked = open && detail && wide.matches;
+  const side = docked ? detail.dealDetail(open, deals, saved, true) : home ? skipRail(deals) : '';
+  const grid = list.length
+    ? `<div class="grid">${list.map((d) => dealCard(d, deals, saved, d.id === state.deal ? 'is-open' : '')).join('')}</div>`
+    : '<div class="none"><h3>No deal matches</h3><p>Try a lower minimum discount, another store or a shorter search.</p><a href="#/" data-clear>Show every deal</a></div>';
+  main.innerHTML = (home ? bestStrip(deals, saved) : resultLine(shown.length, deals.length, state))
+    + `<div class="board ${side ? 'with-side' : ''}"><div class="list">${grid}</div>${side ? `<div class="side-col">${side}</div>` : ''}</div>`;
+  return docked;
 }
 
-// Re-draw the controls without losing the shopper's place in the search box.
 function renderControls() {
   const box = document.activeElement?.id === 'q' ? document.activeElement : null;
   const caret = box ? [box.selectionStart, box.selectionEnd] : null;
@@ -78,17 +80,18 @@ async function render() {
     open ? later.detail() : null,
     !open && state.list ? later.drawer() : null,
   ]);
-  if (ticket !== renders) return; // a newer render has started
+  if (ticket !== renders) return;
   top.innerHTML = boardHeader(deals, state, saved.size);
   controls.hidden = Boolean(compare);
+  let docked = false;
   if (compare) main.innerHTML = compare.compareView(deals, saved);
   else {
     renderControls();
-    renderGrid();
+    docked = renderBoard(open, detail);
   }
-  layer.innerHTML = detail ? detail.dealDetail(open, deals, saved) : drawer ? drawer.shortlistDrawer(deals, saved) : '';
+  layer.innerHTML = detail && !docked ? detail.dealDetail(open, deals, saved, false) : drawer ? drawer.shortlistDrawer(deals, saved) : '';
   document.body.classList.toggle('locked', Boolean(layer.innerHTML));
-  document.title = open ? `${open.product} at ${open.store} · Markdown Hunter` : 'Markdown Hunter · checked Black Friday deals';
+  document.title = open ? `${open.product} at ${open.store} · Markdown Hunter` : 'Markdown Hunter · re-checked Black Friday deals';
   window.__shotReady = true;
 }
 
@@ -130,6 +133,7 @@ window.addEventListener('hashchange', () => {
   render();
   if (before.view !== state.view) window.scrollTo(0, 0);
 });
+wide.addEventListener('change', () => state.deal && render());
 
 const [data, shortlist] = await Promise.all([later.data(), later.shortlist()]);
 deals = data.deals;

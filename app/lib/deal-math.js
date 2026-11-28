@@ -1,31 +1,42 @@
-// Verdicts and the numbers behind them: discount, dollars saved, the deal score used for ranking, and how a price
-// compares with the same product at other stores.
+// Verdicts, discount and savings, the deal score, store-vs-store standing and the Today's best picks.
 
 export const SIGNALS = {
-  low: { label: 'All-Time Low', short: 'Record', weight: 34, blurb: 'The source tracks this as the lowest price ever, or since release.' },
-  strong: { label: 'Strong Deal', short: 'Strong', weight: 18, blurb: 'A deep cut (about 30%+) or the lowest in months, with no record claim.' },
-  fair: { label: 'Fair Price', short: 'Fair', weight: 6, blurb: 'A real but modest cut, or another store has the same thing for less.' },
-  routine: { label: 'Routine · Skip', short: 'Skip', weight: -14, blurb: 'A repeat of an earlier sale, a "was" price nobody charges, or a cut too small to matter.' },
+  low: { label: 'All-Time Low', short: 'Record low', weight: 34 },
+  strong: { label: 'Strong Deal', short: 'Strong', weight: 18 },
+  fair: { label: 'Fair Price', short: 'Fair', weight: 4 },
+  routine: { label: 'Skip', short: 'Skip', weight: -22 },
 };
 
 export const percentOff = (d) => Math.round((1 - d.price / d.was) * 100);
 export const savings = (d) => Math.round((d.was - d.price) * 100) / 100;
 
-// 1–99: mostly the discount, lifted or sunk by the verdict and, gently, by the dollars saved.
 export function dealScore(d) {
-  const raw = percentOff(d) * 0.9 + SIGNALS[d.signal].weight + Math.min(14, Math.log2(1 + savings(d)) * 1.6);
+  const raw = Math.min(percentOff(d), 50) * 0.6 + SIGNALS[d.signal].weight + Math.min(30, Math.log2(1 + savings(d)) * 3);
   return Math.max(1, Math.min(99, Math.round(raw)));
 }
 
-/** Every store's listing of this deal's product, cheapest first (the deal itself included). */
 export function storesFor(deals, d) {
-  return deals.filter((o) => o.group === d.group).sort((a, b) => a.price - b.price);
+  return deals.filter((o) => o.group === d.group).sort((a, b) => a.price - b.price || a.store.localeCompare(b.store));
 }
 
-/** Where this price sits against the same product elsewhere; null when only one store has it. */
 export function storeStanding(deals, d) {
   const all = storesFor(deals, d);
   if (all.length < 2) return null;
-  const cheapest = all[0];
-  return { stores: all.length, lowest: d.price <= cheapest.price, cheapest, gap: Math.round((d.price - cheapest.price) * 100) / 100 };
+  const others = all.filter((o) => o.id !== d.id);
+  return { stores: all.length, best: d.price <= all[0].price, others };
+}
+
+export function todaysBest(deals, categories = ['TVs', 'Audio', 'Home']) {
+  const cheapest = (d) => storeStanding(deals, d)?.best ?? true;
+  const top = categories.map((cat) => deals
+    .filter((d) => d.category === cat && (d.signal === 'low' || d.signal === 'strong') && cheapest(d))
+    .sort((a, b) => dealScore(b) - dealScore(a) || b.was - a.was)
+    .slice(0, 6));
+  let best = { score: -1, picks: [] };
+  const walk = (i, picks, score) => {
+    if (i === top.length) { if (score > best.score) best = { score, picks }; return; }
+    for (const d of top[i]) if (!picks.some((p) => p.store === d.store)) walk(i + 1, [...picks, d], score + dealScore(d) + percentOff(d));
+  };
+  walk(0, [], 0);
+  return best.picks;
 }

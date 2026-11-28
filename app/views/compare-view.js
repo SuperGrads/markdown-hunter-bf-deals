@@ -4,6 +4,7 @@
 import { dealScore, percentOff, savings } from '../lib/deal-math.js';
 import { esc, usd } from '../lib/format.js';
 import { icons, storeSlug, verdictBadge } from './deal-card.js';
+import { addStyles, viewIcons } from './view-styles.js';
 
 const cents = (n) => Math.round(n * 100) / 100;
 
@@ -30,7 +31,7 @@ function storeWins(groups) {
   const wins = new Map();
   for (const g of groups) for (const d of g) if (d.price === g[0].price) wins.set(d.store, (wins.get(d.store) ?? 0) + 1);
   const rows = [...wins].sort((a, b) => b[1] - a[1]).slice(0, 6);
-  return `<section class="side-card"><h3>${icons.store}Cheapest most often</h3><ol class="wins">${rows.map(([s, n]) => `<li><i class="dot st-${storeSlug(s)}"></i>${esc(s)}<b>${n} of ${groups.length}</b></li>`).join('')}</ol></section>`;
+  return `<section class="side-card"><h3>${viewIcons.store}Cheapest most often</h3><ol class="wins">${rows.map(([s, n]) => `<li><i class="dot st-${storeSlug(s)}"></i>${esc(s)}<b>${n} of ${groups.length}</b></li>`).join('')}</ol></section>`;
 }
 
 function shortlistSummary(deals, saved) {
@@ -55,9 +56,10 @@ function categoryTable(deals) {
 }
 
 export function compareView(deals, saved) {
+  addStyles('vs', 'compare');
   const groups = matchups(deals);
   return `<div class="compare">
-  <section class="intro"><h2>${icons.scale}Same product, different stores</h2><p><b>${groups.length} products</b> sold at 2–3 stores, biggest price gap first. Green marks the cheapest; the verdict says whether that price is a real low.</p></section>
+  <section class="intro"><h2>${icons.scale}Same product, different stores</h2><p><b>${groups.length} products</b> sold at 2–4 stores, biggest price gap first. Green marks the cheapest; the verdict says whether that price is a real low.</p></section>
   <div class="compare-cols">
     <div class="matches">${groups.map(matchupCard).join('')}</div>
     <aside class="side">${shortlistSummary(deals, saved)}${storeWins(groups)}</aside>
