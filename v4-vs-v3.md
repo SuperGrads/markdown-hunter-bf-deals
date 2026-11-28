@@ -57,6 +57,7 @@ The judge's five criteria, in order. Inputs: the contact sheets (`review/contact
 - The TCL 98" store-page read matches $1,999.99 among the size offers on TCL's series page; the page's default size shows a lower price.
 - The mock judge above is our own reading of both sheets against the published criteria, not a run of the house judge model.
 
-## 5. makefun check (kit63) and submission
+## 5. makefun check (kit63)
 
-Filled in below after commit, bundle and push.
+`node cli/makefun.mjs check --kit kit63/... --repo . --transcripts transcripts.tar.gz` at 2026-11-28T13:47Z on c7e7285 (the v4 code commit; this file's update is the only later change):
+**14 passed, 0 failed, 6 skipped, 5 checked at submission.** The transcripts hold 30 sessions (the two earlier top-level sessions with their 27 subagents, plus this one). thinking_reproduces: 77.3% authored (1397 of 1805; whole-deliverable denominator 42.9%). thinking_own_work, transcripts_run_record and thinking_in_window pass.
