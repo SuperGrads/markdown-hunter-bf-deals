@@ -1,9 +1,8 @@
 // Markdown Hunter: boots the finder, keeps every view in the URL hash (#/?q=&cat=&store=&min=&sig=&sort=&deal=,
 // #/compare, &list=1) and re-renders on each change. Deal data and secondary views arrive by import().
 
-import { todaysBest } from './lib/deal-math.js';
 import { filterDeals } from './lib/filter-deals.js';
-import { bestStrip, boardHeader, filterBar, isHome, resultLine, skipRail } from './views/board.js';
+import { boardHeader, filterBar, isHome, resultLine, skipBanner, spreadRow } from './views/board.js';
 import { dealCard } from './views/deal-card.js';
 
 const DEFAULTS = { view: 'deals', q: '', cat: '', store: '', min: 0, sig: '', sort: 'score', deal: '', list: '' };
@@ -30,6 +29,7 @@ const wide = matchMedia('(min-width: 900px)');
 
 const later = {
   data: () => import('./data/deals.js'),
+  stats: () => import('./lib/board-stats.js'),
   shortlist: () => import('./lib/shortlist-store.js'),
   compare: () => import('./views/compare-view.js'),
   detail: () => import('./views/deal-detail.js'),
@@ -37,6 +37,8 @@ const later = {
 };
 
 let deals = [];
+let facts = null;
+let spreads = [];
 let store = null;
 let saved = new Set();
 let state = readHash(location.hash);
@@ -47,16 +49,16 @@ const go = (patch) => {
 
 function renderBoard(open, detail) {
   const shown = filterDeals(deals, state);
-  const home = isHome(state) && !open;
-  const picks = home ? new Set(todaysBest(deals).map((d) => d.id)) : new Set();
-  const list = shown.filter((d) => !picks.has(d.id));
+  const home = isHome(state);
   const docked = open && detail && wide.matches;
-  const side = docked ? detail.dealDetail(open, deals, saved, true) : home ? skipRail(deals) : '';
-  const grid = list.length
-    ? `<div class="grid">${list.map((d) => dealCard(d, deals, saved, d.id === state.deal ? 'is-open' : '')).join('')}</div>`
-    : '<div class="none"><h3>No deal matches</h3><p>Try a lower minimum discount, another store or a shorter search.</p><a href="#/" data-clear>Show every deal</a></div>';
-  main.innerHTML = (home ? bestStrip(deals, saved) : resultLine(shown.length, deals.length, state))
-    + `<div class="board ${side ? 'with-side' : ''}"><div class="list">${grid}</div>${side ? `<div class="side-col">${side}</div>` : ''}</div>`;
+  const cards = shown.map((d) => dealCard(d, deals, saved, d.id === state.deal ? 'is-open' : ''));
+  // On the unfiltered board the Skip banner sits after the first three rows, so the top rows are the best deals.
+  if (home) cards.splice(9, 0, skipBanner(facts));
+  const grid = shown.length
+    ? `<div class="grid">${cards.join('')}</div>`
+    : '<div class="none"><h3>No deal matches</h3><p>Try fewer filters or a shorter search.</p><a href="#/" data-clear>Show every deal</a></div>';
+  main.innerHTML = (home ? (docked ? '' : spreadRow(spreads)) : resultLine(shown.length, deals.length, state))
+    + `<div class="board ${docked ? 'with-side' : ''}"><div class="list">${grid}</div>${docked ? `<div class="side-col">${detail.dealDetail(open, deals, saved, true)}</div>` : ''}</div>`;
   return docked;
 }
 
@@ -64,6 +66,9 @@ function renderControls() {
   const box = document.activeElement?.id === 'q' ? document.activeElement : null;
   const caret = box ? [box.selectionStart, box.selectionEnd] : null;
   controls.innerHTML = filterBar(deals, state);
+  // On a phone the category chips scroll sideways: start the row at the chip before the chosen one.
+  const lead = controls.querySelector('.chip.on')?.previousElementSibling;
+  if (lead) lead.parentElement.scrollLeft = lead.offsetLeft - lead.parentElement.offsetLeft;
   if (caret) {
     $('q').focus();
     $('q').setSelectionRange(...caret);
@@ -81,7 +86,7 @@ async function render() {
     !open && state.list ? later.drawer() : null,
   ]);
   if (ticket !== renders) return;
-  top.innerHTML = boardHeader(deals, state, saved.size);
+  top.innerHTML = boardHeader(facts, state, saved.size);
   controls.hidden = Boolean(compare);
   let docked = false;
   if (compare) main.innerHTML = compare.compareView(deals, saved);
@@ -135,8 +140,11 @@ window.addEventListener('hashchange', () => {
 });
 wide.addEventListener('change', () => state.deal && render());
 
-const [data, shortlist] = await Promise.all([later.data(), later.shortlist()]);
+const [data, stats, shortlist] = await Promise.all([later.data(), later.stats(), later.shortlist()]);
 deals = data.deals;
+stats.rankDeals(deals);
+facts = stats.boardFacts(deals);
+spreads = stats.priceSpreads(deals).slice(0, 3);
 store = shortlist;
 saved = shortlist.loadShortlist();
 render();

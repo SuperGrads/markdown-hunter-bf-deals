@@ -1,6 +1,7 @@
 // Takes the site's screenshots with headless Chrome over the DevTools protocol (Node 22+, no packages).
 // Start `node serve.ts --port 8093` first, then: node tools/take-shots.mjs
-// Each shot in shots.json names a hash route, a viewport, optional saved deals and an optional scroll offset.
+// Each shot in shots.json names a hash route, a viewport, optional saved deals and an optional element to scroll to
+// (scrollTo, plus scrollBy pixels) once the page says it has rendered (window.__shotReady).
 
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
@@ -53,12 +54,14 @@ for (const shot of shots) {
   await sleep(500);
   await evaluate(`localStorage.setItem('markdown-hunter:shortlist', ${JSON.stringify(JSON.stringify(shot.saved ?? []))}); true`);
   await send('Page.navigate', { url: base + 'index.html?shot=' + shot.file + shot.path });
-  await sleep(700);
-  if (shot.scrollTo) await evaluate(`document.querySelector(${JSON.stringify(shot.scrollTo)})?.scrollIntoView(); window.scrollBy(0, ${shot.scrollBy ?? 0}); true`);
+  for (let i = 0; i < 50 && !(await evaluate('window.__shotReady === true')); i++) await sleep(100);
+  await sleep(300);
+  if (shot.scrollTo) await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(shot.scrollTo)}); window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + ${shot.scrollBy ?? 0}); return true; })()`);
   if (shot.type) await evaluate(`(() => { const q = document.getElementById('q'); q.focus(); q.value = ${JSON.stringify(shot.type)}; q.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
   await sleep(400);
   const ready = await evaluate('window.__shotReady === true');
-  const { data } = await send('Page.captureScreenshot', { format: 'jpeg', quality: shot.quality ?? 88, clip: { x: 0, y: 0, width, height, scale: 1 }, captureBeyondViewport: false });
+  const y = await evaluate('window.scrollY'); // the clip is in page coordinates, so it starts where the window scrolled
+  const { data } = await send('Page.captureScreenshot', { format: 'jpeg', quality: shot.quality ?? 88, clip: { x: 0, y, width, height, scale: 1 }, captureBeyondViewport: false });
   writeFileSync(join(root, 'screenshots', shot.file), Buffer.from(data, 'base64'));
   console.log(`${shot.file}: ${width}x${height} ready=${ready} ${Math.round((data.length * 0.75) / 1024)} KiB`);
 }

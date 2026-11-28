@@ -11,6 +11,7 @@ export const viewIcons = {
 
 const SHEETS = {
   vs: `
+.muted { color: var(--ink-3); }
 .vs { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
 .vs li { display: grid; grid-template-columns: 108px minmax(24px, 1fr) 82px 58px 84px; align-items: center; gap: 6px; font-size: 14px; }
 .vs-store { text-decoration: none; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

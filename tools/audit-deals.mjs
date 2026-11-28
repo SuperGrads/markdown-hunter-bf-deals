@@ -1,7 +1,8 @@
-// Audits the deal data before a hand-in and prints the numbers v3-vs-v2.md quotes (Node 22, no packages):
+// Audits the deal data before a hand-in and prints the numbers v4-vs-v3.md quotes (Node 22, no packages):
 //   node tools/audit-deals.mjs
 // Every deal must have a product, store, category, a product URL at an https store (no search or listing page), a
-// sale and a usual price with the sale lower, a check time on 28 Nov 2026 (UTC), a readAt, a verdict and evidence.
+// sale and a usual price with the sale lower, a check time on 28 Nov 2026 (UTC), a readAt, a verdict and evidence,
+// a card note short enough for one line, and at least two reads of ours, the last one being the price shown.
 // A store-page read must match the row's price. The site's text must not address an AI judge. Exits 1 on a failure.
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -26,6 +27,9 @@ for (const d of deals) {
   if (!d.checked.startsWith('2026-11-28T')) fail(d, `checked ${d.checked}, not 28 Nov UTC`);
   if (!SIGNALS[d.signal]) fail(d, `unknown verdict ${d.signal}`);
   if (!SOURCES[d.src].updated.startsWith('2026-11-28T')) fail(d, 'source not updated on 28 Nov UTC');
+  if (!d.note || d.note.length > 42) fail(d, `card note missing or over 42 characters: ${d.note}`);
+  if (d.reads.at(-1).price !== d.price || d.reads.at(-1).at !== d.checked) fail(d, 'its last read is not the price and time shown');
+  if (d.reads.length < 2) fail(d, 'read only once');
   const page = STORE_PAGE_READS[d.id];
   if (page && Math.abs(page.price - d.price) > 0.001) fail(d, `store page showed ${page.price}, row says ${d.price}`);
   if (page && page.was && Math.abs(page.was - d.was) > 0.001) fail(d, `store page "was" ${page.was}, row says ${d.was}`);

@@ -1,7 +1,8 @@
-// One deal as a card (verdict, prices, evidence, other stores, where and when it was read) and the shared icons.
+// One deal as a compact card: verdict, % off, product, prices, Buy link, the store and its rank among stores, why
+// the verdict, and where, when and how often we read the price. Each line fits (tools/audit-fit.mjs measures it).
 
-import { SIGNALS, dealScore, percentOff, savings, storeStanding } from '../lib/deal-math.js';
-import { checkedAt, esc, readWhere, usd } from '../lib/format.js';
+import { SIGNALS, dealScore, percentOff, readTrail, storeStanding } from '../lib/deal-math.js';
+import { checkedAt, esc, usd } from '../lib/format.js';
 
 export const svg = (body) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const STAR = 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z';
@@ -27,36 +28,31 @@ export const storeSlug = (store) => store.toLowerCase().replace(/[^a-z]+/g, '');
 export const verdictBadge = (signal, short = false) =>
   `<span class="badge sig-${signal}" title="${SIGNALS[signal].label}">${SIGNAL_ICON[signal]}${short ? SIGNALS[signal].short : SIGNALS[signal].label}</span>`;
 
-const gapText = (gap) => (gap === 0 ? 'same' : gap > 0 ? `+${usd(gap)}` : `−${usd(-gap)}`);
-
-export function alsoLine(deals, d, max = 2) {
-  const s = storeStanding(deals, d);
-  if (!s) return '';
-  const shown = s.others.slice(0, max).map((o) => `<a href="#/?deal=${encodeURIComponent(o.id)}" data-open="${esc(o.id)}">${esc(o.store)} <b>${usd(o.price)}</b></a> (${gapText(Math.round((o.price - d.price) * 100) / 100)})`);
-  const more = s.others.length > max ? ` +${s.others.length - max} more` : '';
-  return `<p class="also">${icons.scale}<span>Also: ${shown.join(' · ')}${more}</span></p>`;
+/** "held 3 reads" when every read saw today's price, else where it came from: "from $149 on 27 Nov". */
+export function trailText(d) {
+  const t = readTrail(d);
+  if (t.held) return t.count > 1 ? `held ${t.count} reads` : '1 read';
+  return `from ${usd(t.first.price)} on ${checkedAt(t.first.at).split(' ').slice(0, 2).join(' ')}`;
 }
 
-export function bestMark(deals, d) {
-  const s = storeStanding(deals, d);
-  return s?.best ? `<span class="best">Best price of ${s.stores}</span>` : '';
-}
+/** Where the price was read: the store's own page, or the deals site (the price check names the exact page). */
+export const readWhere = (d) => (d.readAt === 'store page' ? `${d.store} page` : d.site);
 
-export function readLine(d) {
-  const onPage = d.readAt === 'store page';
-  return `<p class="meta ${onPage ? 'on-page' : ''}">${onPage ? icons.page : icons.clock}<span><b>${onPage ? 'Read on store page' : `Read in ${esc(readWhere(d))}`}</b> · ${checkedAt(d.checked)}</span></p>`;
+function storeLine(deals, d) {
+  const s = storeStanding(deals, d);
+  const rank = !s ? '' : s.best ? `<span class="best">lowest of ${s.stores}</span>` : `<span class="dearer">+${usd(s.gap)} vs ${esc(s.cheapest.store)}</span>`;
+  return `<p class="store fit"><i class="dot st-${storeSlug(d.store)}"></i><b>${esc(d.store)}</b>${rank}${d.terms ? `<span class="terms">${esc(d.terms)}</span>` : ''}</p>`;
 }
 
 export function dealCard(d, deals, saved, extra = '') {
   const isSaved = saved.has(d.id);
-  const verb = d.signal === 'routine' ? 'See it' : 'Buy';
+  const onPage = d.readAt === 'store page';
   return `<article class="card sig-${d.signal} ${extra}">
-  <div class="card-top">${verdictBadge(d.signal)}<em class="off">−${percentOff(d)}%</em><span class="score" title="Deal score out of 99">${dealScore(d)}</span><button class="save-btn ${isSaved ? 'on' : ''}" data-save="${esc(d.id)}" aria-pressed="${isSaved}" aria-label="${isSaved ? 'Remove from' : 'Add to'} shortlist">${isSaved ? icons.starFill : icons.star}</button></div>
+  <div class="card-top">${verdictBadge(d.signal)}<em class="off">−${percentOff(d)}%</em><span class="score" title="Deal score out of 99">${dealScore(d)}</span><button class="save-btn" data-save="${esc(d.id)}" aria-pressed="${isSaved}" aria-label="${isSaved ? 'Remove from' : 'Add to'} shortlist">${isSaved ? icons.starFill : icons.star}</button></div>
   <h3><a href="#/?deal=${encodeURIComponent(d.id)}" data-open="${esc(d.id)}">${esc(d.product)}</a></h3>
-  <div class="where"><i class="dot st-${storeSlug(d.store)}"></i><b>${esc(d.store)}</b>${bestMark(deals, d)}${d.terms ? `<span class="terms">${icons.tag}${esc(d.terms)}</span>` : ''}<a class="go" href="${esc(d.url)}" target="_blank" rel="noopener noreferrer" aria-label="${verb} at ${esc(d.store)}">${verb}${icons.out}</a></div>
-  <div class="prices"><strong>${usd(d.price)}</strong><s>${usd(d.was)}</s><span class="save">save ${usd(savings(d))}</span></div>
-  <p class="why">${esc(d.evidence)}</p>
-  ${alsoLine(deals, d)}
-  ${readLine(d)}
+  <div class="prices"><strong>${usd(d.price)}</strong><s>${usd(d.was)}</s><a class="go" href="${esc(d.url)}" target="_blank" rel="noopener noreferrer">${d.signal === 'routine' ? 'See it' : 'Buy'}${icons.out}</a></div>
+  ${storeLine(deals, d)}
+  <p class="why fit">${esc(d.note)}</p>
+  <p class="read fit ${onPage ? 'on-page' : ''}">${onPage ? icons.page : icons.clock}<b>${esc(readWhere(d))}</b> ${checkedAt(d.checked)} · ${trailText(d)}</p>
 </article>`;
 }

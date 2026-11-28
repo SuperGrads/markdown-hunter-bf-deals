@@ -1,12 +1,14 @@
 // The price-check panel for one deal (#/?deal=<id>): the verdict and its evidence, the discount worked out from the
-// two prices, when and where the price was read (store page or a named deals source, with that source's update
-// time), the shopper's terms, and the same product at every other store. On a wide screen it is docked beside the
-// list; on a phone it opens as a sheet over it.
+// two prices, every read of the price we made (27 Nov to today), when and where the last one was (store page or a
+// named deals source, with that source's update time), the shopper's terms, and the same product at every other
+// store. On a wide screen it is docked beside the list; on a phone it opens as a sheet over it.
 
 import { SIGNALS, dealScore, percentOff, savings, storesFor } from '../lib/deal-math.js';
-import { checkedAt, esc, hostOf, usd } from '../lib/format.js';
+import { checkedAt, esc, usd } from '../lib/format.js';
 import { icons, storeSlug, verdictBadge } from './deal-card.js';
 import { addStyles, viewIcons } from './view-styles.js';
+
+const hostOf = (url) => new URL(url).hostname.replace(/^www\./, '');
 
 // What each verdict means, in full; the cards show only its name.
 const BLURBS = {
@@ -53,6 +55,7 @@ export function dealDetail(d, deals, saved, docked) {
     <dl class="facts">
       <dt>The math</dt><dd>${usd(d.was)} − ${usd(d.price)} = <b>${usd(savings(d))}</b> off (${percentOff(d)}%)</dd>
       <dt>Checked</dt><dd><b>${checkedAt(d.checked)}</b></dd>
+      <dt>Our reads</dt><dd>${d.reads.map((r) => `${checkedAt(r.at)} <b>${usd(r.price)}</b>`).join(' → ')}</dd>
       ${provenance(d)}
       <dt>Terms</dt><dd>${esc(d.terms || 'No code or membership needed')}</dd>
     </dl>

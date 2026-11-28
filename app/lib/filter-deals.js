@@ -1,9 +1,9 @@
 // Search, facet filters, sort orders, and the live count each filter option shows.
 
-import { dealScore, percentOff, savings } from './deal-math.js';
+import { percentOff, savings } from './deal-math.js';
 
 const SORTS = {
-  score: (a, b) => dealScore(b) - dealScore(a),
+  score: (a, b) => a.rank - b.rank, // lib/board-stats.js ranks every deal once the data arrives
   percent: (a, b) => percentOff(b) - percentOff(a),
   saved: (a, b) => savings(b) - savings(a),
   price: (a, b) => a.price - b.price,

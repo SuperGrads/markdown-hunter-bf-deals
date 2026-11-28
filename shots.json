@@ -1,6 +1,6 @@
 [
-  { "file": "1-deals.jpg", "path": "#/", "viewport": { "width": 1000, "height": 625 }, "scale": 1.28, "quality": 82, "saved": ["lg-c6-65-bestbuy", "airpods-pro-3-amazon", "dyson-v9-motorbar-walmart"] },
-  { "file": "2-price-check.jpg", "path": "#/?cat=Home&min=40&deal=dyson-v9-motorbar-target", "viewport": { "width": 1000, "height": 625 }, "scale": 1.28, "quality": 82, "saved": ["lg-c6-65-bestbuy", "airpods-pro-3-amazon", "dyson-v9-motorbar-walmart"] },
-  { "file": "3-compare-stores.jpg", "path": "#/compare", "viewport": { "width": 1000, "height": 625 }, "scale": 1.28, "quality": 82, "saved": ["lg-c6-65-bestbuy", "airpods-pro-3-amazon", "dyson-v9-motorbar-walmart"] },
-  { "file": "4-phone.jpg", "path": "#/", "viewport": { "width": 390, "height": 844 }, "scale": 1.5, "quality": 84, "saved": ["lg-c6-65-bestbuy"] }
+  { "file": "1-deals.jpg", "path": "#/", "viewport": { "width": 1200, "height": 757 }, "scale": 1.0667, "quality": 80, "saved": ["lg-c6-65-bestbuy", "airpods-pro-3-amazon"] },
+  { "file": "2-filters.jpg", "path": "#/?cat=Home&min=40", "viewport": { "width": 420, "height": 404 }, "scale": 2, "quality": 80, "scrollTo": ".seg", "scrollBy": -8 },
+  { "file": "3-compare-stores.jpg", "path": "#/compare", "viewport": { "width": 420, "height": 404 }, "scale": 2, "quality": 80, "scrollTo": ".intro", "scrollBy": -8 },
+  { "file": "4-phone.jpg", "path": "#/", "viewport": { "width": 390, "height": 404 }, "scale": 2, "quality": 80, "scrollTo": ".gaps", "scrollBy": -40 }
 ]
