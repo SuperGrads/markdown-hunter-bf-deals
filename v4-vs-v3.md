@@ -61,3 +61,7 @@ The judge's five criteria, in order. Inputs: the contact sheets (`review/contact
 
 `node cli/makefun.mjs check --kit kit63/... --repo . --transcripts transcripts.tar.gz` at 2026-11-28T13:47Z on c7e7285 (the v4 code commit; this file's update is the only later change):
 **14 passed, 0 failed, 6 skipped, 5 checked at submission.** The transcripts hold 30 sessions (the two earlier top-level sessions with their 27 subagents, plus this one). thinking_reproduces: 77.3% authored (1397 of 1805; whole-deliverable denominator 42.9%). thinking_own_work, transcripts_run_record and thinking_in_window pass.
+
+## 6. Submission
+
+Submitted 2026-11-28T13:49:34Z as **01a2226b-1b79-759b-b276-39a4646ddacd** ("Markdown Hunter v4"), commit db98ff3. Signed with the account's payout wallet; transcripts bundle sha256 c731fda7…282f (30 sessions). On a re-check at db98ff3, `makefun check` (kit63) gave 14 passed, 0 failed. Intake checks: repo_owner, repo_public, commit_in_repo, repo_readme, repo_about and entry_signature all pass. `final` was not run.
